@@ -1,5 +1,5 @@
 let express = require('express');
-let port = 80;
+let port = 8080;
 let server = express();
 server.listen(port);
 console.log('Server is running on port ', port);
