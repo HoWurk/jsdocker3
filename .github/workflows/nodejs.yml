@@ -1,0 +1,52 @@
+name: Docker CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build Docker Image
+        if: success()
+        run: |
+          docker build -t node-app-image:${{ github.sha }} .
+
+      - name: Publish Docker Image
+        if: success()
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+        run: |
+          docker tag node-app-image:${{ github.sha }} my-docker-image:latest
+          docker push node-app-image:${{ github.sha }}
+          docker push node-app-image:latest
+
+      - name: Test Docker Image
+        if: success() && github.event_name == 'push'
+        run: |
+          docker run -d -p 8080:8080 node-app-image:latest
+          sleep 5
+          http_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/healthcheck)
+          if [ $http_status -ne 200 ]; then
+            echo "Healthcheck failed with status code $http_status"
+            exit 1
+          fi
