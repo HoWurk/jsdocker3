@@ -47,7 +47,7 @@ jobs:
         run: |
           docker run -d -p 8080:8080 jsapp:latest
           sleep 5
-          http_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/healthcheck)
+          http_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/)
           if [ $http_status -ne 200 ]; then
             echo "Healthcheck failed with status code $http_status"
             exit 1
