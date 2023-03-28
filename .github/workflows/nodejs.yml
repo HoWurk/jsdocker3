@@ -27,23 +27,25 @@ jobs:
       - name: Build Docker Image
         if: success()
         run: |
-          docker build -t node-app-image:${{ github.sha }} .
+          docker build -t jsapp:${{ github.sha }} .
 
-      - name: Publish Docker Image
-        if: success()
-        uses: docker/login-action@v1
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-        run: |
-          docker tag node-app-image:${{ github.sha }} my-docker-image:latest
-          docker push node-app-image:${{ github.sha }}
-          docker push node-app-image:latest
+
+      - name: Publish Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/jsapp:latest
 
       - name: Test Docker Image
         if: success() && github.event_name == 'push'
         run: |
-          docker run -d -p 8080:8080 node-app-image:latest
+          docker run -d -p 8080:8080 jsapp:latest
           sleep 5
           http_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/healthcheck)
           if [ $http_status -ne 200 ]; then
